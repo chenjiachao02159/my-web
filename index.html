@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NoVaCc - AI 创作工作站</title>
+    <title>NoVaCc - AI 创作工作站 (最终文档适配版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
@@ -125,7 +125,6 @@
                     <input type="password" id="apiKey" placeholder="输入您的 API 凭证" class="w-full px-4 py-2.5 bg-gray-50 border-transparent rounded-2xl text-sm focus:bg-white focus:border-mi-orange/30 focus:ring-4 focus:ring-mi-orange/10 outline-none transition-all">
                 </div>
                 
-                <!-- 模块 3 优化：将 Gemini API Key 的配置收拢至全局设置，杜绝硬编码 -->
                 <div class="pt-2 border-t border-gray-100/60 mt-2">
                     <label class="block text-[13px] font-medium text-gray-500 mb-2 pl-1">Gemini API Key <span class="text-[10px] text-gray-400 font-normal ml-1">(专用于魔法扩写)</span></label>
                     <input type="password" id="geminiApiKey" placeholder="输入 Gemini 官方凭证" class="w-full px-4 py-2.5 bg-gray-50 border-transparent rounded-2xl text-sm focus:bg-white focus:border-mi-orange/30 focus:ring-4 focus:ring-mi-orange/10 outline-none transition-all">
@@ -249,7 +248,6 @@
         /* === 1. 核心状态与安全防护库 === */
         const AppState = { currentMode: 'text', currentModelId: 'gpt-5.4-pro', isGenerating: false };
         
-        // 模块 3 优化：防范 XSS 的核心转义工具
         const SecureUtils = {
             escapeHTML(str) {
                 if (!str) return '';
@@ -333,16 +331,17 @@
             general: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`
         };
 
+        // 模块 4 优化：更新尺寸名称标注，明确标示标准尺寸与代理扩展尺寸，避免用户误解 API 能力
         const SizePresets = {
             opaiImg: [
-                {l:'1024x1024 (方图)', v:'1024x1024'},
-                {l:'1792x1024 (16:9横图)', v:'1792x1024'},
-                {l:'1024x1792 (9:16竖图)', v:'1024x1792'},
-                {l:'2048x2048 (2K方图)', v:'2048x2048'},
-                {l:'2560x1440 (2K横图)', v:'2560x1440'},
-                {l:'1440x2560 (2K竖图)', v:'1440x2560'},
-                {l:'4096x4096 (4K方图)', v:'4096x4096'},
-                {l:'3840x2160 (4K横图)', v:'3840x2160'}
+                {l:'1024x1024 (官方标准方图)', v:'1024x1024'},
+                {l:'1792x1024 (官方标准宽图)', v:'1792x1024'},
+                {l:'1024x1792 (官方标准长图)', v:'1024x1792'},
+                {l:'2048x2048 (2K代理扩展方图)', v:'2048x2048'},
+                {l:'2560x1440 (2K代理扩展宽图)', v:'2560x1440'},
+                {l:'1440x2560 (2K代理扩展长图)', v:'1440x2560'},
+                {l:'4096x4096 (4K代理扩展方图)', v:'4096x4096'},
+                {l:'3840x2160 (4K代理扩展宽图)', v:'3840x2160'}
             ]
         };
 
@@ -555,7 +554,6 @@
             });
         }
 
-        // 模块 3 优化：封装防 XSS 富文本处理渲染机制
         function addChatBubble(text, isUser = false, extraClass = '', save = false, isSafeHtml = false) { 
             const chatContainer = document.getElementById('chatContainer'); 
             const bubbleWrap = document.createElement('div');
@@ -563,9 +561,8 @@
             const bubble = document.createElement('div'); 
             bubble.className = `chat-bubble ${isUser ? 'chat-user shadow-sm' : 'chat-ai bg-white border border-gray-100 shadow-sm'} ${extraClass}`; 
             
-            // 安全注入逻辑
             if (isSafeHtml) {
-                bubble.innerHTML = text; // 此时传入的是我们自己构建的安全 HTML 包含节点
+                bubble.innerHTML = text; 
             } else {
                 bubble.innerHTML = SecureUtils.escapeHTML(text).replace(/\n/g, '<br>'); 
             }
@@ -664,7 +661,6 @@
 
             chatHistory = JSON.parse(localStorage.getItem('novacc_chat_history') || '[]');
             chatHistory.forEach(msg => {
-                // 兼容老版本包含富文本缓存的情况，若老缓存带 <img> 标签则视作 HTML
                 const isHtml = msg.isSafeHtml !== undefined ? msg.isSafeHtml : (msg.content.includes('<img') || msg.content.includes('<span class="text-red-500"'));
                 addChatBubble(msg.content, msg.role === 'user', '', false, isHtml); 
             });
@@ -688,12 +684,10 @@
 
         /* === 4. 生命周期调度整合 (解决散装事件的潜在隐患) === */
         function initAllEvents() {
-            // 设置项变动同步本地存储
             document.getElementById('apiUrl').addEventListener('input', (e) => localStorage.setItem('novacc_apiUrl', e.target.value));
             document.getElementById('apiKey').addEventListener('input', (e) => localStorage.setItem('novacc_apiKey', e.target.value));
             document.getElementById('geminiApiKey').addEventListener('input', (e) => localStorage.setItem('novacc_gemini_apiKey', e.target.value));
 
-            // 输入区域高度自动调整
             promptText.addEventListener('input', adjustPromptHeight);
             promptText.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -704,7 +698,6 @@
                 }
             });
 
-            // 本地图片选择
             imageInput.addEventListener('change', (e) => { 
                 if (e.target.files && e.target.files.length > 0) { 
                     Array.from(e.target.files).forEach(file => uploadedFiles.push(file));
@@ -713,7 +706,6 @@
                 } 
             });
 
-            // 拖拽层逻辑管理
             dropZone.addEventListener('dragenter', (e) => { 
                 e.preventDefault(); 
                 dragCounter++;
@@ -753,7 +745,6 @@
                 }
             });
 
-            // 键盘快捷键监听
             document.addEventListener('keydown', (e) => {
                 if (AppState.currentMode === 'image' && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
                     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
@@ -771,7 +762,6 @@
                 }
             });
 
-            // 面板全局点击逻辑
             document.addEventListener('click', (e) => {
                 const trigger = e.target.closest('.dropdown-trigger'); 
                 const item = e.target.closest('.dropdown-item');
@@ -800,7 +790,6 @@
                 }
             });
 
-            // 弹窗状态管理
             document.getElementById('openSettingsBtn').onclick = () => openModal('settingsModal');
             document.getElementById('openModelPickerBtn').onclick = () => openModal('modelModal');
             document.querySelectorAll('.close-modal-btn').forEach(btn => { 
@@ -810,7 +799,6 @@
                 backdrop.onclick = (e) => { if(e.target === backdrop) closeModal(e.target.closest('div[id$="Modal"]').id); } 
             });
             
-            // 画板图片弹窗关闭重置机制
             document.getElementById('closeLightboxBtn').onclick = () => {
                 const modal = document.getElementById('lightboxModal');
                 const img = document.getElementById('lightboxImg');
@@ -827,7 +815,6 @@
                 }, 300);
             };
 
-            // 全局设置参数调节器
             document.querySelectorAll('.format-btn').forEach(btn => {
                 btn.onclick = (e) => {
                     document.querySelectorAll('.format-btn').forEach(b => {
@@ -866,7 +853,6 @@
                 } 
             });
 
-            // 批量操作挂载
             document.getElementById('batchCancelBtn').onclick = clearSelection;
             document.getElementById('batchDownloadBtn').onclick = async () => {
                 if (typeof JSZip === 'undefined') {
@@ -943,7 +929,6 @@
                 clearSelection();
             };
 
-            // 数据清空按钮
             document.getElementById('clearStorageBtn').onclick = async function() {
                 if (clearStorageClicks === 0) {
                     this.innerHTML = "<span>确定要清空吗？再次点击确认</span>";
@@ -983,7 +968,6 @@
                 }
             };
 
-            // 模型同步拉取
             document.getElementById('syncModelsBtn').onclick = async () => {
                 const apiKey = document.getElementById('apiKey').value.trim(); 
                 const baseUrl = document.getElementById('apiUrl').value.trim().replace(/\/+$/, '');
@@ -1033,7 +1017,6 @@
                 }
             };
 
-            // 图像生成面板交互全收集
             document.getElementById('resultGrid').addEventListener('click', async (e) => {
                 const card = e.target.closest('.grid-item');
                 if (!card) return;
@@ -1138,11 +1121,9 @@
                 }
             });
 
-            // 润色请求逻辑
             document.getElementById('enhanceBtn').onclick = async () => {
                 if (AppState.isGenerating) return;
                 
-                // 模块 3 优化：强制从设置面板中获取独立配置好的 Gemini API 凭证
                 const geminiKey = document.getElementById('geminiApiKey').value.trim();
                 if (!geminiKey) {
                     showStatus('请先在全局设置中配置 Gemini 凭证以开启魔法扩写', true);
@@ -1212,7 +1193,6 @@
                 enhanceBtn.classList.remove('opacity-50', 'animate-pulse');
             };
 
-            // 核心生成逻辑
             document.getElementById('generateBtn').onclick = async () => {
                 if (AppState.isGenerating) return;
 
@@ -1249,7 +1229,6 @@
                         let isHtmlContent = false;
                         if (base64Images.length > 0) {
                             const imgHtml = base64Images.map(b64 => `<img src="${b64}" class="max-w-[120px] rounded-xl mb-2 border border-gray-200 shadow-sm inline-block mr-2">`).join('');
-                            // 模块 3 优化：分离结构保证图片节点正常渲染的同时将输入文本严密转义防注入
                             userBubbleHtml = `<div>${imgHtml}</div><p class="whitespace-pre-wrap">${SecureUtils.escapeHTML(prompt)}</p>`;
                             isHtmlContent = true;
                         } else {
@@ -1279,7 +1258,6 @@
                         const finalContent = data.choices[0].message.content;
                         const loadingBubble = document.getElementById('chatContainer').querySelector('.loading-bubble');
                         
-                        // 模块 3 优化：强制对大模型返回数据洗脱标签转义
                         loadingBubble.innerHTML = SecureUtils.escapeHTML(finalContent).replace(/\n/g, '<br>');
                         loadingBubble.classList.remove('loading-bubble');
                         
@@ -1314,6 +1292,13 @@
                                 n: 1,
                                 response_format: actualFormat
                             };
+
+                            // 模块 4 优化：注入独立长宽参数，适配支持自定义高分辨率的第三方代理引擎
+                            if (size && size.includes('x')) {
+                                const dims = size.split('x');
+                                payload.width = parseInt(dims[0], 10);
+                                payload.height = parseInt(dims[1], 10);
+                            }
 
                             if (base64Images.length > 0) {
                                 payload.image = base64Images;
@@ -1362,7 +1347,6 @@
                                     if(skel) {
                                         skel.classList.remove('animate-pulse');
                                         const errorTip = base64Images.length > 0 && err.message.includes('Unrecognized request argument') ? '此模型不支持参考垫图' : err.message;
-                                        // 这里生成的属于内部错误拦截数据可信任
                                         skel.innerHTML = `<div class="flex flex-col items-center justify-center opacity-80 text-red-500 p-4 text-center"><svg class="w-8 h-8 mb-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="text-[13px] font-bold">生成失败</span><span class="text-[11px] mt-1.5 text-gray-500 break-all line-clamp-3">${SecureUtils.escapeHTML(errorTip)}</span></div>`;
                                         setTimeout(() => skel.remove(), 4000); 
                                     }
@@ -1387,7 +1371,6 @@
                     if(AppState.currentMode === 'text') {
                         const loadingBubble = document.getElementById('chatContainer').querySelector('.loading-bubble');
                         if(loadingBubble) {
-                            // 错误内容输出洗脱
                             loadingBubble.innerHTML = `<span class="text-red-500 font-medium">❌ 异常: ${SecureUtils.escapeHTML(err.message)}</span>`;
                             loadingBubble.classList.remove('loading-bubble');
                         }
